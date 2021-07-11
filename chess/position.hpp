@@ -14,25 +14,21 @@ public:
     std::vector<position> next_positions();
 
     void print() const;
-    void print_trace();
+    void print_trace() const;
 
 private:
     board_t board;
-    bool side_to_move;
-    
+    bool to_move;
+
     int enpassant_file;
 
-    point white_king_pos;
-    point black_king_pos;
-    bool white_long_castle;
-    bool white_short_castle;
-    bool black_long_castle;
-    bool black_short_castle;
+    std::array<point, 2> king_pos;
+    std::array<std::array<bool, 2>, 2> castling_info;
 
     std::string trace;
 
     bool under_attack(const point p, bool whom);
 
-    position generate_position(const point start, const point end);
-    position castle(bool kingside);
+    position generate_position(const point start, const point end) const;
+    position castle(bool side) const;
 };

@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "position.hpp"
-#include "types.hpp"
+#include <chess/position.hpp>
+#include <chess/types.hpp>
 
 uint64_t i = 0;
 
@@ -22,15 +22,12 @@ void explore(position& pos, int total_ply, int cur_ply) {
 void explore2(position& pos, int ply) {
     int total = 0;
     std::vector<position> next_positions = pos.next_positions();
-    int j = 0;
-    int size = next_positions.size();
     for(position& next_pos : next_positions) {
         i = 0;
     	next_pos.print_trace();
 	explore(next_pos, ply - 1, 0);
         total += i;
         std::cout << i << std::endl;
-	j++;
     }
     std::cout << "total = " << total << std::endl;
 }
@@ -44,7 +41,6 @@ int main(int, char* argv[]) {
 
     int ply = std::stoi(argv[2]);
 
-    i = 0;
     explore(pos, ply, 0);
     std::cout << i << std::endl;
 
