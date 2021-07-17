@@ -8,8 +8,8 @@ uint64_t i = 0;
 void explore(position& pos, int total_ply, int cur_ply) {
     if(cur_ply == total_ply) {
         i++;
-        // pos.print_trace();
-        // std::cout << std::endl;
+        pos.print();
+        std::cout << std::endl;
         return;
     }
     
@@ -24,7 +24,6 @@ void explore2(position& pos, int ply) {
     std::vector<position> next_positions = pos.next_positions();
     for(position& next_pos : next_positions) {
         i = 0;
-    	next_pos.print_trace();
 	explore(next_pos, ply - 1, 0);
         total += i;
         std::cout << i << std::endl;

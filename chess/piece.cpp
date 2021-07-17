@@ -2,131 +2,163 @@
 
 #include <iostream>
 
-std::vector<point> get_pawn_moves(const board_t& board, const point cur, bool color);
-std::vector<point> get_knight_moves(const board_t& board, const point cur, bool color);
-std::vector<point> get_bishop_moves(const board_t& board, const point cur, bool color);
-std::vector<point> get_rook_moves(const board_t& board, const point cur, bool color);
-std::vector<point> get_queen_moves(const board_t& board, const point cur, bool color);
-std::vector<point> get_king_moves(const board_t& board, const point cur, bool color);
+std::vector<int> get_pawn_moves(const int board[64], const int cur, bool color);
+std::vector<int> get_knight_moves(const int board[64], const int cur, bool color);
+std::vector<int> get_bishop_moves(const int board[64], const int cur, bool color);
+std::vector<int> get_rook_moves(const int board[64], const int cur, bool color);
+std::vector<int> get_queen_moves(const int board[64], const int cur, bool color);
+std::vector<int> get_king_moves(const int board[64], const int cur, bool color);
 
-std::vector<point> knight_or_king_moves(const board_t& board, const point cur, bool color,
-const std::array<point, 8>& dir);
-std::vector<point> bishop_or_rook_moves(const board_t& board, const point cur, bool color,
-const std::array<point, 8>& dir);
+std::vector<int> knight_or_king_moves(const int board[64], const int cur, bool color,
+const int dir[8]);
+std::vector<int> bishop_or_rook_moves(const int board[64], const int cur, bool color,
+const int dir[4]);
 
-
-bool get_color(char piece) {
-    return (piece >= 'A' && piece <= 'Z' ? WHITE : BLACK);
-}
-
-std::vector<point> get_moves(const board_t& board, const point cur) {
-    char piece = board[cur.x][cur.y];
-    bool color = get_color(piece);
-
-    switch(piece) {
+int char_to_piece(const char ch) {
+    switch(ch) {
         case 'p':
-        case 'P':
-            return get_pawn_moves(board, cur, color);
-            break;
+            return BLACK_PAWN;
         case 'n':
-        case 'N':
-            return get_knight_moves(board, cur, color);
-            break;
+            return BLACK_KNIGHT;
         case 'b':
-        case 'B':
-            return get_bishop_moves(board, cur, color);
-            break;
+            return BLACK_BISHOP;
         case 'r':
-        case 'R':
-            return get_rook_moves(board, cur, color);
-            break;
+            return BLACK_ROOK;
         case 'q':
-        case 'Q':
-            return get_queen_moves(board, cur, color);
-            break;
+            return BLACK_QUEEN;
         case 'k':
+            return BLACK_KING;
+        case 'P':
+            return WHITE_PAWN;
+        case 'N':
+            return WHITE_KNIGHT;
+        case 'B':
+            return WHITE_BISHOP;
+        case 'R':
+            return WHITE_ROOK;
+        case 'Q':
+            return WHITE_QUEEN;
         case 'K':
-            return get_king_moves(board, cur, color);
-            break;
-        default:
-            throw "Invalid piece";
+            return WHITE_KING;
     }
+    throw 0;
 }
 
-std::vector<point> get_pawn_moves(const board_t& board, const point cur, bool color) {
-    std::vector<point> moves;
+char piece_to_char(const int p) {
+    switch(p/2) {
+        case PAWN:
+            return 'p' + !PCOLOR(p) * ('A' - 'a');
+        case KNIGHT:
+            return 'n' + !PCOLOR(p) * ('A' - 'a');
+        case BISHOP:
+            return 'b' + !PCOLOR(p) * ('A' - 'a');
+        case ROOK:
+            return 'r' + !PCOLOR(p) * ('A' - 'a');
+        case QUEEN:
+            return 'q' + !PCOLOR(p) * ('A' - 'a');
+        case KING:
+            return 'k' + !PCOLOR(p) * ('A' - 'a');
+        case EMPTY/2:
+	    return '.';
+    }
+    throw 0;
+}
 
-    if(cur.x == HOME_ROW[color] + PAWN_DIR[color]) {
-        if(!board[cur.x + PAWN_DIR[color]][cur.y] && !board[cur.x + 2 * PAWN_DIR[color]][cur.y]) {
-            moves.push_back({cur.x + 2 * PAWN_DIR[color], cur.y});
+std::vector<int> get_moves(const int board[64], const int cur) {
+    int piece = board[cur];
+    bool color = PCOLOR(piece);
+
+    switch(piece/2) {
+        case PAWN:
+            return get_pawn_moves(board, cur, color);
+        case KNIGHT:
+            return get_knight_moves(board, cur, color);
+        case BISHOP:
+            return get_bishop_moves(board, cur, color);
+	case ROOK:
+            return get_rook_moves(board, cur, color);
+        case QUEEN:
+            return get_queen_moves(board, cur, color);
+        case KING:
+            return get_king_moves(board, cur, color);
+    }
+    throw 0;
+}
+
+std::vector<int> get_pawn_moves(const int board[64], const int cur, bool color) {
+    std::vector<int> moves;
+
+    if(cur >= HOME_ROW(color) + PAWN_DIR(color) && cur < HOME_ROW(color) + PAWN_DIR(color) + 8) {
+        if(board[cur + PAWN_DIR(color)] == EMPTY && board[cur + 2 * PAWN_DIR(color)] == EMPTY) {
+            moves.push_back(cur + 2 * PAWN_DIR(color));
         }
     }
-    if(!board[cur.x + PAWN_DIR[color]][cur.y]) {
-        moves.push_back({cur.x + PAWN_DIR[color], cur.y});
+    if(board[cur + PAWN_DIR(color)] == EMPTY) {
+        moves.push_back(cur + PAWN_DIR(color));
     }
-    if(cur.y > 0 && board[cur.x + PAWN_DIR[color]][cur.y - 1]
-       && color != get_color(board[cur.x + PAWN_DIR[color]][cur.y - 1])) {
-        moves.push_back({cur.x + PAWN_DIR[color], cur.y - 1});
+    if(cur % 8 > 0 && board[cur + PAWN_DIR(color) - 1] != EMPTY
+       && color != PCOLOR(board[cur + PAWN_DIR(color) - 1])) {
+        moves.push_back(cur + PAWN_DIR(color) - 1);
     }
-    if(cur.y < 7 && board[cur.x + PAWN_DIR[color]][cur.y + 1]
-       && color != get_color(board[cur.x + PAWN_DIR[color]][cur.y + 1])) {
-        moves.push_back({cur.x + PAWN_DIR[color], cur.y + 1});
+    if(cur % 8 < 7 && board[cur + PAWN_DIR(color) + 1] != EMPTY
+       && color != PCOLOR(board[cur + PAWN_DIR(color) + 1])) {
+        moves.push_back(cur + PAWN_DIR(color) + 1);
     }
 
     return moves;
 }
 
-std::vector<point> get_knight_moves(const board_t& board, const point cur, bool color) {
-    return knight_or_king_moves(board, cur, color,
-                                {{{1, 2}, {-1, 2}, {1, -2}, {-1, -2}, {2, 1}, {2, -1}, {-2, 1}, {-2, -1}}});
+std::vector<int> get_knight_moves(const int board[64], const int cur, bool color) {
+    int dir[8] = {10, -6, 6, -10, 17, 15, -15, -17};
+    return knight_or_king_moves(board, cur, color, dir);
 }
 
-std::vector<point> get_bishop_moves(const board_t& board, const point cur, bool color) {
-    return bishop_or_rook_moves(board, cur, color,
-                                {{{1, 1}, {-1, 1}, {1, -1}, {-1, -1}}});
+std::vector<int> get_bishop_moves(const int board[64], const int cur, bool color) {
+    int dir[4] = {9, -7, 7, -9};
+    return bishop_or_rook_moves(board, cur, color, dir);
 }
 
-std::vector<point> get_rook_moves(const board_t& board, const point cur, bool color) {
-    return bishop_or_rook_moves(board, cur, color,
-                                {{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}});
+std::vector<int> get_rook_moves(const int board[64], const int cur, bool color) {
+    int dir[4] = {8, -8, 1, -1};
+    return bishop_or_rook_moves(board, cur, color, dir);
 }
 
-std::vector<point> get_queen_moves(const board_t& board, const point cur, bool color) {
-    std::vector<point> moves = get_bishop_moves(board, cur, color);
-    std::vector<point> rook_moves = get_rook_moves(board, cur, color);
+std::vector<int> get_queen_moves(const int board[64], const int cur, bool color) {
+    std::vector<int> moves = get_bishop_moves(board, cur, color);
+    std::vector<int> rook_moves = get_rook_moves(board, cur, color);
     moves.insert(moves.end(), rook_moves.begin(), rook_moves.end());
 
     return moves;
 }
 
-std::vector<point> get_king_moves(const board_t& board, const point cur, bool color) {
-    return knight_or_king_moves(board, cur, color,
-                                {{{1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}}});
+std::vector<int> get_king_moves(const int board[64], const int cur, bool color) {
+    int dir[8] = {7, 8, 9, 1, -7, -8, -9, -1};
+    return knight_or_king_moves(board, cur, color, dir);
 }
 
-std::vector<point> knight_or_king_moves(const board_t& board, const point cur, bool color,
-const std::array<point, 8>& dir) {
-    std::vector<point> moves;
-    for(const point p : dir) {
-        point next = cur.add(p);
-        if(next.valid() && (!board[next.x][next.y] || color != get_color(board[next.x][next.y]))) {
+std::vector<int> knight_or_king_moves(const int board[64], const int cur, bool color,
+const int dir[8]) {
+    std::vector<int> moves;
+    for(int i = 0; i < 8; ++i) {
+        int next = cur + dir[i];
+        if(next >= 0 && next < 64 && (board[next] == EMPTY || color != PCOLOR(board[next]))) {
             moves.push_back(next);
         }
     }
-
+    
     return moves;
 }
 
-std::vector<point> bishop_or_rook_moves(const board_t& board, const point cur, bool color,
-const std::array<point, 8>& dir) {
-    std::vector<point> moves;
-    for(const point p : dir) {
-        point next = cur.add(p);
-        while(next.valid() && !board[next.x][next.y]) {
+std::vector<int> bishop_or_rook_moves(const int board[64], const int cur, bool color,
+const int dir[4]) {
+    std::vector<int> moves;
+    for(int i = 0; i < 4; ++i) {
+        int next = cur + dir[i];
+        while(next >= 0 && next < 64 && board[next] == EMPTY) {
             moves.push_back(next);
-            next = next.add(p);
+            next += dir[i];
         }
-        if(next.valid() && color != get_color(board[next.x][next.y])) {
+        if(next >= 0 && next < 64 && color != PCOLOR(board[next])) {
             moves.push_back(next);
         }
     }

@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "point.hpp"
 #include "types.hpp"
 
-bool get_color(char piece);
+int char_to_piece(const char ch);
+char piece_to_char(const int p);
 
-std::vector<point> get_moves(const board_t& board, const point cur);
+std::vector<int> get_moves(const int board[64], const int cur);
