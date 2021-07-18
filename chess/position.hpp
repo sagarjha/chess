@@ -22,6 +22,8 @@ private:
 
     int enpassant_file;
 
+    std::vector<int> piece_pos[6][2];
+
     std::array<int, 2> king_pos;
     std::array<std::array<bool, 2>, 2> castling_info;
 

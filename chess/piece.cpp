@@ -1,7 +1,5 @@
 #include "piece.hpp"
 
-#include <iostream>
-
 std::vector<int> get_pawn_moves(const int board[64], const int cur, bool color);
 std::vector<int> get_knight_moves(const int board[64], const int cur, bool color);
 std::vector<int> get_bishop_moves(const int board[64], const int cur, bool color);
@@ -141,7 +139,8 @@ const int dir[8]) {
     std::vector<int> moves;
     for(int i = 0; i < 8; ++i) {
         int next = cur + dir[i];
-        if(next >= 0 && next < 64 && (board[next] == EMPTY || color != PCOLOR(board[next]))) {
+        if(next >= 0 && next < 64 && std::abs((next % 8) - (cur % 8)) <= 2
+           && (board[next] == EMPTY || color != PCOLOR(board[next]))) {
             moves.push_back(next);
         }
     }
@@ -154,11 +153,15 @@ const int dir[4]) {
     std::vector<int> moves;
     for(int i = 0; i < 4; ++i) {
         int next = cur + dir[i];
-        while(next >= 0 && next < 64 && board[next] == EMPTY) {
+	int prev = cur;
+        while(next >= 0 && next < 64 && std::abs(next % 8 - prev % 8) <= 1
+              && board[next] == EMPTY) {
             moves.push_back(next);
             next += dir[i];
+	    prev += dir[i];
         }
-        if(next >= 0 && next < 64 && color != PCOLOR(board[next])) {
+        if(next >= 0 && next < 64 && std::abs(next % 8 - prev % 8) <= 1
+           && color != PCOLOR(board[next])) {
             moves.push_back(next);
         }
     }
