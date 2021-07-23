@@ -6,27 +6,41 @@
 
 uint64_t i = 0;
 
-void explore(position& pos, int total_ply, int cur_ply) {
+void explore(position& pos, int total_ply, int cur_ply = 0) {
     if(cur_ply == total_ply) {
         i++;
         // pos.print();
         // std::cout << std::endl;
         return;
     }
-    
-    std::vector<position> next_positions = pos.next_positions();
-    for(position& next : next_positions) {
-        explore(next, total_ply, cur_ply + 1);
+
+    std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
+    for(move_t& move : moves_plus_memory.first) {
+        try {
+            pos.make_move(move);
+        } catch(...) {
+            pos.take_back(move, moves_plus_memory.second);
+            continue;
+        }
+        explore(pos, total_ply, cur_ply + 1);
+        pos.take_back(move, moves_plus_memory.second);
     }
 }
 
 void explore2(position& pos, int ply) {
     int total = 0;
-    std::vector<position> next_positions = pos.next_positions();
-    for(position& next_pos : next_positions) {
+    std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
+    for(move_t& move : moves_plus_memory.first) {
+        try {
+            pos.make_move(move);
+        } catch(...) {
+            pos.take_back(move, moves_plus_memory.second);
+            continue;
+        }
         i = 0;
-        next_pos.print();
-	explore(next_pos, ply - 1, 0);
+        pos.print_fen();
+	explore(pos, ply - 1);
+	pos.take_back(move, moves_plus_memory.second);
         total += i;
         std::cout << i << std::endl;
     }
@@ -38,8 +52,8 @@ int main(int, char* argv[]) {
 
     int ply = std::stoi(argv[2]);
 
-    explore(pos, ply, 0);
-    std::cout << i << std::endl;
+    // pos.print();
 
-    // explore2(pos, ply);
+    explore(pos, ply);
+    std::cout << i << std::endl;
 }

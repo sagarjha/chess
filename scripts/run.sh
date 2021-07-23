@@ -13,6 +13,7 @@ for fen in "${fens[@]}"; do
     for (( i = 0; i < 7; ++i )); do
 	date
 	timeout 600 ../Release/bin/main "$fen" $i
+	echo
     done
     echo
 done

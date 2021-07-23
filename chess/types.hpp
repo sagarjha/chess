@@ -4,10 +4,6 @@
 
 #pragma once
 
-#include <array>
-#include <memory>
-#include <optional>
-
 #define PAWN 0
 #define KNIGHT 1
 #define BISHOP 2
@@ -43,3 +39,15 @@
 #define HOME_ROW(side) (56 * !side)
 #define MIDDLE_ROW(side) (24 + 8 * !side)
 #define PAWN_DIR(side) (-8 + 16 * side)
+
+#define GRAVE -1
+struct move_t {
+    std::pair<int, std::pair<int, int>> main;
+    std::pair<int, std::pair<int, int>> side;
+    std::pair<int, std::pair<int, int>> promo;
+};
+
+struct memory_t {
+    int old_castling_info[2][2];
+    int old_enpassant_file;
+};

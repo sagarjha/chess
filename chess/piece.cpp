@@ -62,7 +62,7 @@ char piece_to_char(const int p) {
     throw 0;
 }
 
-std::vector<int> get_moves(const int board[64], const int cur) {
+std::vector<int> get_piece_moves(const int board[64], const int cur) {
     int piece = board[cur];
     bool color = PCOLOR(piece);
 
