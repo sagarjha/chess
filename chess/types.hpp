@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <utility>
+
 #define PAWN 0
 #define KNIGHT 1
 #define BISHOP 2
@@ -51,3 +53,5 @@ struct memory_t {
     int old_castling_info[2][2];
     int old_enpassant_file;
 };
+
+#define SLIDER(d) ((d) < 4 ? ROOK : BISHOP)

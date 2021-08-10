@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "board.hpp"
 #include "types.hpp"
 
 class position {
@@ -19,12 +20,11 @@ public:
     void print_fen() const;
 
 private:
-    int board[64];
+    board_t board;
     bool to_move;
 
     int enpassant_file;
 
-    std::vector<int> piece_pos[6][2];
     bool castling_info[2][2];
 
     bool under_attack(const int square, const bool whom);

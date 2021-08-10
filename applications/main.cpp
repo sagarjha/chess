@@ -16,12 +16,7 @@ void explore(position& pos, int total_ply, int cur_ply = 0) {
 
     std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
     for(move_t& move : moves_plus_memory.first) {
-        try {
-            pos.make_move(move);
-        } catch(...) {
-            pos.take_back(move, moves_plus_memory.second);
-            continue;
-        }
+        pos.make_move(move);
         explore(pos, total_ply, cur_ply + 1);
         pos.take_back(move, moves_plus_memory.second);
     }
@@ -31,12 +26,7 @@ void explore2(position& pos, int ply) {
     int total = 0;
     std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
     for(move_t& move : moves_plus_memory.first) {
-        try {
-            pos.make_move(move);
-        } catch(...) {
-            pos.take_back(move, moves_plus_memory.second);
-            continue;
-        }
+        pos.make_move(move);
         i = 0;
         pos.print_fen();
 	explore(pos, ply - 1);
@@ -56,4 +46,6 @@ int main(int, char* argv[]) {
 
     explore(pos, ply);
     std::cout << i << std::endl;
+
+    // explore2(pos, ply);
 }
