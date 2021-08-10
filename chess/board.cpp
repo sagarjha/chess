@@ -1,12 +1,8 @@
 #include "board.hpp"
 
 #include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <iostream>
 
 #include "piece.hpp"
-#include "signal.h"
 #include "types.hpp"
 
 std::map<int, std::array<int, 8>> knight_jumps;
