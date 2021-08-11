@@ -17,15 +17,15 @@ From the Release directory, run:
 ## Move Generation
 In reference to [Perft Results](https://www.chessprogramming.org/Perft_Results)
 
-Date Wed 11 Aug 2021 12:28:04 AM EDT, commit 4c935a14b8936126f2c0103874f0ca49e232c844
+Date Wed 11 Aug 2021 05:53:15 AM EDT, commit 564def7170ce5217e21e845c07bcdfb36dfe41e2
 
 |d = | 4 | 5 | 6 | 7 |
 |--- |---|---|---|---|
-| Initial Position | 0.03s |0.48s |11.68s |293.26s |
-| Position 2 | 0.33s |14.97s | | |
-| Position 3 | 0.01s |0.07s |1.21s |17.95s |
-| Position 4 | 0.03s |1.29s |51.86s | |
-| Position 5 | 0.16s |6.78s |232.34s | |
-| Position 6 | 0.27s |18.07s |479.42s | |
+| Initial Position | 0.02s |0.33s |8.03s |210.74s |
+| Position 2 | 0.25s |10.94s |481.63s | |
+| Position 3 | 0.00s |0.06s |1.10s |15.47s |
+| Position 4 | 0.03s |0.91s |41.56s | |
+| Position 5 | 0.12s |5.35s |185.08s | |
+| Position 6 | 0.20s |8.65s |352.23s | |
 
 Empty table entry implies a timeout (equal to 600s)
