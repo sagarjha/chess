@@ -1,4 +1,6 @@
+#include <iomanip>
 #include <iostream>
+#include <chrono>
 
 #include <chess/piece.hpp>
 #include <chess/position.hpp>
@@ -56,10 +58,26 @@ int main(int, char* argv[]) {
 
     int ply = std::stoi(argv[2]);
 
+    int print_total = std::stoi(argv[3]);
+    int print_time = std::stoi(argv[4]);
+
     // pos.print();
 
+    auto start_time = std::chrono::steady_clock::now();
+
     explore(pos, ply);
-    std::cout << i << std::endl;
+
+    auto end_time = std::chrono::steady_clock::now();
+    long long int nanoseconds_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+
+    if(print_total) {
+        std::cout << i << std::endl;
+    }
+    
+    if(print_time) {
+        std::cout << std::fixed << std::setprecision(2)
+                  << nanoseconds_elapsed / 1e9 << "s" << std::endl;
+    }
 
     // explore2(pos, ply);
 }
