@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "piece.hpp"
-#include "types.hpp"
 
 std::map<int, std::array<int, 8>> knight_jumps;
 std::function<int(int board[64], int)> find_next[8];
@@ -12,63 +11,33 @@ bool is_initialized = false;
 void initialize();
 int find_alignment(int pos1, int pos2);
 void normal_move(int board[64], std::vector<move_t>& moves, int cur, int dest);
-bool under_attack(int board[64], int pos, int side, int knight_pos[10]);
+bool under_attack(int board[64], int pos, int side);
 void bishop_or_rook_moves(int board[64], std::vector<move_t>& moves,
                           int cur, const int dir[4]);
 std::array<int, 8>& get_knight_jumps(int pos);
 
 void board_t::place(const int pos, const int piece) {
+  board[pos] = piece;
+}
+
+void board_t::place_king(const int pos, const int piece) {
     board[pos] = piece;
-    if(piece / 2 == KING) {
-        king_pos[PCOLOR(piece)] = pos;
-    }
-    if(piece / 2 == KNIGHT) {
-        int idx = 0;
-        while(knight_pos[PCOLOR(piece)][idx] != -1) {
-            idx++;
-        }
-        knight_pos[PCOLOR(piece)][idx] = pos;
-    }
+    king_pos[PCOLOR(piece)] = pos;
 }
 
 void board_t::remove(const int pos) {
-    if(board[pos] == EMPTY) {
-        return;
-    }
-
-    int piece = board[pos];
     board[pos] = EMPTY;
-
-    if(piece / 2 == KNIGHT) {
-      int idx = 0;
-      while(knight_pos[PCOLOR(piece)][idx] != pos) {
-          idx++;
-      }
-      knight_pos[PCOLOR(piece)][idx] = -1;
-      while(idx + 1 < 10 && knight_pos[PCOLOR(piece)][idx + 1] != -1) {
-          knight_pos[PCOLOR(piece)][idx] = knight_pos[PCOLOR(piece)][idx + 1];
-          knight_pos[PCOLOR(piece)][idx + 1] = -1;
-          idx++;
-      }
-    }
 }
 
 void board_t::replace(const int src, const int dest) {
-    int piece = board[src];
+    board[dest] = board[src];
     board[src] = EMPTY;
-    remove(dest);
+}
 
-    board[dest] = piece;
-    if(piece / 2 == KING) {
-        king_pos[PCOLOR(piece)] = dest;
-    }
-    if(piece / 2 == KNIGHT) {
-      int idx = 0;
-      while(knight_pos[PCOLOR(piece)][idx] != src) {
-          idx++;
-      }
-      knight_pos[PCOLOR(piece)][idx] = dest;
-    }
+void board_t::replace_king(const int src, const int dest) {
+    board[dest] = board[src];
+    board[src] = EMPTY;
+    king_pos[PCOLOR(board[dest])] = dest;
 }
 
 void board_t::find_checks(int enemy_pos[2], int side) {
@@ -88,19 +57,11 @@ void board_t::find_checks(int enemy_pos[2], int side) {
         }
     }
 
-    for(int idx = 0; idx < 10; idx++) {
-        int k_pos = knight_pos[!side][idx];
-        if(k_pos == -1) {
+    for(int dest : get_knight_jumps(king_pos[side])) {
+        if(board[dest] == 2 * KNIGHT + !side) {
+            enemy_pos[num_checks++] = dest;
             break;
         }
-        if(std::abs(k_pos - king_pos[side]) > 17) {
-            continue;
-        }
-        for(int dest : get_knight_jumps(k_pos))
-            if(dest == king_pos[side]) {
-                enemy_pos[num_checks++] = k_pos;
-                break;
-            }
     }
 }
 
@@ -132,7 +93,7 @@ int board_t::check_pinned(int pos) {
             pins[pos] = dir;
             return dir;
         }
-    } else if (piece2 == 2 * KING + side){
+    } else if(piece2 == 2 * KING + side) {
         if((piece1 / 2 == QUEEN || piece1 / 2 == SLIDER(2 * dir)) && PCOLOR(piece1) != side) {
             pins[pos] = dir;
             return dir;
@@ -149,7 +110,7 @@ void board_t::find_king_moves(std::vector<move_t>& moves, int side) {
         int next = king_pos[side] + dir;
         if(next >= 0 && next < 64 && std::abs((next % 8) - (king_pos[side] % 8)) <= 1
            && (board[next] == EMPTY || side != PCOLOR(board[next]))
-           && !under_attack(board, next, !side, knight_pos[!side])) {
+           && !under_attack(board, next, !side)) {
             place(king_pos[side], 2 * KING + side);
             normal_move(board, moves, king_pos[side], next);
             remove(king_pos[side]);
@@ -160,20 +121,20 @@ void board_t::find_king_moves(std::vector<move_t>& moves, int side) {
 
 void board_t::find_king_moves(std::vector<move_t>& moves, int side, bool castling_info[2]) {
     find_king_moves(moves, side);
-    
+
     if(castling_info[QUEENSIDE]
        && board[HOME_ROW(side) + 1] == EMPTY && board[HOME_ROW(side) + 2] == EMPTY
        && board[HOME_ROW(side) + 3] == EMPTY
-       && !under_attack(board, HOME_ROW(side) + 2, !side, knight_pos[!side]) && !under_attack(board, HOME_ROW(side) + 3, !side, knight_pos[!side])
-       && !under_attack(board, HOME_ROW(side) + 4, !side, knight_pos[!side])) {
+       && !under_attack(board, HOME_ROW(side) + 2, !side) && !under_attack(board, HOME_ROW(side) + 3, !side)
+       && !under_attack(board, HOME_ROW(side) + 4, !side)) {
         moves.push_back({{2 * KING + side, {HOME_ROW(side) + 4, HOME_ROW(side) + 2}},
                          {2 * ROOK + side, {HOME_ROW(side), HOME_ROW(side) + 3}},
                          {-1, {-1, -1}}});
     }
     if(castling_info[KINGSIDE]
        && board[HOME_ROW(side) + 5] == EMPTY && board[HOME_ROW(side) + 6] == EMPTY
-       && !under_attack(board, HOME_ROW(side) + 4, !side, knight_pos[!side]) && !under_attack(board, HOME_ROW(side) + 5, !side, knight_pos[!side])
-       && !under_attack(board, HOME_ROW(side) + 6, !side, knight_pos[!side])) {
+       && !under_attack(board, HOME_ROW(side) + 4, !side) && !under_attack(board, HOME_ROW(side) + 5, !side)
+       && !under_attack(board, HOME_ROW(side) + 6, !side)) {
         moves.push_back({{2 * KING + side, {HOME_ROW(side) + 4, HOME_ROW(side) + 6}},
                          {2 * ROOK + side, {HOME_ROW(side) + 7, HOME_ROW(side) + 5}},
                          {-1, {-1, -1}}});
@@ -218,7 +179,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
     int side = PCOLOR(board[pos]);
     if(pos >= HOME_ROW(side) + PAWN_DIR(side) && pos < HOME_ROW(side) + PAWN_DIR(side) + 8) {
         if(board[pos + PAWN_DIR(side)] == EMPTY && board[pos + 2 * PAWN_DIR(side)] == EMPTY) {
-          normal_move(board, moves, pos, pos + 2 * PAWN_DIR(side));
+            normal_move(board, moves, pos, pos + 2 * PAWN_DIR(side));
         }
     }
     if(board[pos + PAWN_DIR(side)] == EMPTY) {
@@ -230,7 +191,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
                                  {2 * promoted_piece + side, {GRAVE, next}}});
             }
         } else {
-	    normal_move(board, moves, pos, next);
+            normal_move(board, moves, pos, next);
         }
     }
     if(pos % 8 > 0 && board[pos + PAWN_DIR(side) - 1] != EMPTY
@@ -243,7 +204,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
                                  {2 * promoted_piece + side, {GRAVE, next}}});
             }
         } else {
-	    normal_move(board, moves, pos, next);
+            normal_move(board, moves, pos, next);
         }
     }
     if(pos % 8 < 7 && board[pos + PAWN_DIR(side) + 1] != EMPTY
@@ -256,7 +217,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
                                  {2 * promoted_piece + side, {GRAVE, next}}});
             }
         } else {
-	    normal_move(board, moves, pos, next);
+            normal_move(board, moves, pos, next);
         }
     }
 
@@ -284,7 +245,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
                 }
             }
         }
-	place(MIDDLE_ROW(!side) + enpassant_file, 2 * PAWN + !side);
+        place(MIDDLE_ROW(!side) + enpassant_file, 2 * PAWN + !side);
         if(possible) {
             moves.push_back({{2 * PAWN + side,
                               {MIDDLE_ROW(!side) + enpassant_file - 1,
@@ -293,7 +254,7 @@ void board_t::find_pawn_moves(std::vector<move_t>& moves, int pos, int enpassant
                              {-1, {-1, -1}}});
         }
     }
-    if( enpassant_file < 7 && pos == MIDDLE_ROW(!side) + enpassant_file + 1) {
+    if(enpassant_file < 7 && pos == MIDDLE_ROW(!side) + enpassant_file + 1) {
         remove(MIDDLE_ROW(!side) + enpassant_file);
         bool possible = true;
         int dir = find_alignment(king_pos[side], pos);
@@ -439,12 +400,6 @@ board_t::board_t() {
     for(int i = 0; i < 64; ++i) {
         board[i] = EMPTY;
     }
-
-    for(int i = 0; i < 2; ++i) {
-        for(int j = 0; j < 10; ++j) {
-            knight_pos[i][j] = -1;
-        }
-    }
 }
 
 void initialize() {
@@ -550,7 +505,7 @@ int find_alignment(int pos1, int pos2) {
     return -1;
 }
 
-void normal_move (int board[64], std::vector<move_t>& moves, int cur, int dest) {
+void normal_move(int board[64], std::vector<move_t>& moves, int cur, int dest) {
     int piece = board[cur];
     if(board[dest] == EMPTY) {
         moves.push_back({{piece, {cur, dest}}, {-1, {-1, -1}}, {-1, {-1, -1}}});
@@ -612,23 +567,14 @@ void board_t::find_non_king_moves(std::vector<move_t>& moves, int side, int pos)
         }
     }
 
-    for(int idx = 0; idx < 10; idx++) {
-        int k_pos = knight_pos[side][idx];
-        if(k_pos == -1) {
-            break;
+    for(int dest : get_knight_jumps(pos)) {
+        if(board[dest] == 2 * KNIGHT + side && check_pinned(dest) == -1) {
+            normal_move(board, moves, dest, pos);
         }
-        if(std::abs(k_pos - pos) > 17 || check_pinned(k_pos) != -1) {
-            continue;
-        }
-        for(int dest : get_knight_jumps(k_pos))
-            if(dest == pos) {
-                normal_move(board, moves, k_pos, pos);
-                break;
-            }
     }
 }
 
-bool under_attack(int board[64], int pos, int side, int knight_pos[10]) {
+bool under_attack(int board[64], int pos, int side) {
     for(int dir = 0; dir < 8; ++dir) {
         int next = find_next[dir](board, pos);
         if(next != -1) {
@@ -646,18 +592,9 @@ bool under_attack(int board[64], int pos, int side, int knight_pos[10]) {
         }
     }
 
-    for(int idx = 0; idx < 10; idx++) {
-        int k_pos = knight_pos[idx];
-        if(k_pos == -1) {
-            break;
-        }
-        if(std::abs(k_pos - pos) > 17) {
-            continue;
-        }
-        for(int dest : get_knight_jumps(k_pos)) {
-            if(dest == pos) {
-                return true;
-            }
+    for(int dest : get_knight_jumps(pos)) {
+        if(board[dest] == 2 * KNIGHT + side) {
+            return true;
         }
     }
 

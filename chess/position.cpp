@@ -1,7 +1,6 @@
 #include "position.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <functional>
 #include <iostream>
 
@@ -18,10 +17,14 @@ position::position(const std::string& fen) {
             continue;
         }
         if(std::isdigit(ch)) {
-	    cur += (ch - '0');
+            cur += (ch - '0');
         } else {
             int piece = char_to_piece(ch);
-            board.place(cur, piece);
+            if(piece / 2 == KING) {
+                board.place_king(cur, piece);
+            } else {
+                board.place(cur, piece);
+            }
             cur++;
         }
     }
@@ -64,39 +67,36 @@ position::position(const std::string& fen) {
         enpassant_file = fen[fen_pos] - 'a';
         fen_pos += 2;
     }
-
 }
 
-std::pair<std::vector<move_t>, memory_t> position::get_moves() {
-    memory_t m;
-    for(int color : {WHITE, BLACK}) {
-        for(int side : {KINGSIDE, QUEENSIDE}) {
-            m.old_castling_info[color][side] = castling_info[color][side];
-        }
-    }
-    m.old_enpassant_file = enpassant_file;
-
+std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> position::get_moves() {
     board.reset_pins_map();
 
-    std::vector<move_t> moves;
+    std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> moves_plus_memory;
+    for(int color : {WHITE, BLACK}) {
+        for(int side : {KINGSIDE, QUEENSIDE}) {
+	  moves_plus_memory.second.old_castling_info[color][side] = castling_info[color][side];
+        }
+    }
+    moves_plus_memory.second.old_enpassant_file = enpassant_file;
 
     int in_check_from[2];
     board.find_checks(in_check_from, to_move);
     // special case - king is in check
     if(in_check_from[0] != -1) {
-      int piece = board[in_check_from[0]];
-      board.find_king_moves(moves, to_move);
-      if(in_check_from[1] == -1) {
-          board.find_captures(moves, in_check_from[0]);
-          if(board[in_check_from[0]] / 2 == PAWN && in_check_from[0] % 8 == enpassant_file) {
-              board.find_enpassant_captures(moves, to_move, enpassant_file);
-          }
-          if(piece / 2 == ROOK || piece / 2 == BISHOP || piece / 2 == QUEEN) {
-              board.find_blocking_moves(moves, in_check_from[0], to_move);
-          }
-      }
+        int piece = board[in_check_from[0]];
+        board.find_king_moves(moves_plus_memory.first.first, to_move);
+        if(in_check_from[1] == -1) {
+            board.find_captures(moves_plus_memory.first.second, in_check_from[0]);
+            if(board[in_check_from[0]] / 2 == PAWN && in_check_from[0] % 8 == enpassant_file) {
+                board.find_enpassant_captures(moves_plus_memory.first.second, to_move, enpassant_file);
+            }
+            if(piece / 2 == ROOK || piece / 2 == BISHOP || piece / 2 == QUEEN) {
+                board.find_blocking_moves(moves_plus_memory.first.second, in_check_from[0], to_move);
+            }
+        }
 
-      return {moves, m};
+        return moves_plus_memory;
     }
 
     for(int cur = 0; cur < 64; ++cur) {
@@ -108,31 +108,30 @@ std::pair<std::vector<move_t>, memory_t> position::get_moves() {
                      || (piece / 2 == BISHOP && pin_dir < 2))) {
                     if(piece / 2 == PAWN) {
                         if(pin_dir != 0) {
-                            board.find_pawn_moves(moves, cur, pin_dir, enpassant_file);
+                            board.find_pawn_moves(moves_plus_memory.first.second, cur, pin_dir, enpassant_file);
                         }
                     } else {
-                        board.find_piece_moves(moves, cur, pin_dir);
+                        board.find_piece_moves(moves_plus_memory.first.second, cur, pin_dir);
                     }
                 }
                 continue;
             }
 
             if(piece / 2 == PAWN) {
-                board.find_pawn_moves(moves, cur, enpassant_file);
+                board.find_pawn_moves(moves_plus_memory.first.second, cur, enpassant_file);
             } else if(piece / 2 == KING) {
-                board.find_king_moves(moves, to_move, castling_info[to_move]);
+                board.find_king_moves(moves_plus_memory.first.first, to_move, castling_info[to_move]);
             } else {
-                board.find_piece_moves(moves, cur);
+                board.find_piece_moves(moves_plus_memory.first.second, cur);
             }
         }
     }
-    
-    return {moves, m};
+
+    return moves_plus_memory;
 }
 
 void position::make_move(const move_t move) {
-    bool is_castling = (move.side.first != -1) && (PCOLOR(move.main.first) == PCOLOR(move.side.first));
-    bool is_capture = !is_castling && (move.side.first != -1);
+    bool is_capture = (move.side.first != -1);
     bool is_promo = (move.promo.second.second != -1);
     bool is_enpassant = is_capture && (move.main.second.second != move.side.second.first);
 
@@ -144,10 +143,6 @@ void position::make_move(const move_t move) {
     if(is_capture && (capture_start % 8 == 0 || capture_start % 8 == 7)) {
         castling_info[!to_move][QUEENSIDE] &= !(capture_start == HOME_ROW(!to_move) + 0);
         castling_info[!to_move][KINGSIDE] &= !(capture_start == HOME_ROW(!to_move) + 7);
-    }
-
-    if(main_piece / 2 == KING) {
-        castling_info[to_move][QUEENSIDE] = castling_info[to_move][KINGSIDE] = false;
     }
 
     if(main_piece / 2 == ROOK) {
@@ -163,19 +158,35 @@ void position::make_move(const move_t move) {
 
     if(is_promo) {
         board.remove(main_start);
-	board.remove(move.promo.second.second);
-	board.place(move.promo.second.second, move.promo.first);
-    } else if(is_castling) {
-        board.replace(main_start, main_end);
-	board.replace(move.side.second.first, move.side.second.second);
+        board.remove(move.promo.second.second);
+        board.place(move.promo.second.second, move.promo.first);
     } else {
-	board.replace(main_start, main_end);
+        board.replace(main_start, main_end);
         if(is_enpassant) {
             board.remove(move.side.second.first);
         }
     }
 
     to_move = !to_move;
+}
+
+void position::make_king_move(const move_t move) {
+    bool is_castling = (PCOLOR(move.main.first) == PCOLOR(move.side.first));
+
+    int main_start = move.main.second.first;
+    int main_end = move.main.second.second;
+
+    castling_info[to_move][QUEENSIDE] = castling_info[to_move][KINGSIDE] = false;
+
+    if(is_castling) {
+        board.replace_king(main_start, main_end);
+        board.replace(move.side.second.first, move.side.second.second);
+    } else {
+        board.replace_king(main_start, main_end);
+    }
+
+    to_move = !to_move;
+    enpassant_file = -1;
 }
 
 void position::take_back(const move_t move, const memory_t m) {
@@ -186,35 +197,58 @@ void position::take_back(const move_t move, const memory_t m) {
     }
     enpassant_file = m.old_enpassant_file;
 
-    bool was_castling = (move.side.first != -1) && (PCOLOR(move.main.first) == PCOLOR(move.side.first));
-    bool was_capture = !was_castling && (move.side.first != -1);
+    bool was_capture = (move.side.first != -1);
     bool was_promo = (move.promo.second.second != -1);
     bool was_enpassant = was_capture && (move.main.second.second != move.side.second.first);
 
     int main_piece = move.main.first;
     int main_start = move.main.second.first;
     int main_end = move.main.second.second;
-    
+
     if(was_promo) {
         board.place(main_start, main_piece);
         board.remove(move.promo.second.second);
         if(was_capture) {
             board.place(move.promo.second.second, move.side.first);
         }
-    } else if(was_castling) {
-        board.replace(main_end, main_start);
-	board.replace(move.side.second.second, move.side.second.first);
     } else {
         board.replace(main_end, main_start);
         if(was_capture) {
             if(was_enpassant) {
                 board.place(move.side.second.first, move.side.first);
             } else {
-	      board.place(main_end, move.side.first);
+                board.place(main_end, move.side.first);
             }
         }
     }
-    
+
+    to_move = !to_move;
+}
+
+void position::take_king_back(const move_t move, const memory_t m) {
+    for(int color : {WHITE, BLACK}) {
+        for(int side : {KINGSIDE, QUEENSIDE}) {
+            castling_info[color][side] = m.old_castling_info[color][side];
+        }
+    }
+    enpassant_file = m.old_enpassant_file;
+
+    bool was_castling = (move.side.first != -1) && (PCOLOR(move.main.first) == PCOLOR(move.side.first));
+    bool was_capture = !was_castling && (move.side.first != -1);
+
+    int main_start = move.main.second.first;
+    int main_end = move.main.second.second;
+
+    if(was_castling) {
+        board.replace_king(main_end, main_start);
+        board.replace(move.side.second.second, move.side.second.first);
+    } else {
+        board.replace_king(main_end, main_start);
+        if(was_capture) {
+            board.place(main_end, move.side.first);
+        }
+    }
+
     to_move = !to_move;
 }
 

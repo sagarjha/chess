@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <chess/position.hpp>
 #include <chess/piece.hpp>
+#include <chess/position.hpp>
 #include <chess/types.hpp>
 
 uint64_t i = 0;
@@ -14,8 +14,13 @@ void explore(position& pos, int total_ply, int cur_ply = 0) {
         return;
     }
 
-    std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
-    for(move_t& move : moves_plus_memory.first) {
+    std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> moves_plus_memory = pos.get_moves();
+    for(move_t& move : moves_plus_memory.first.first) {
+        pos.make_king_move(move);
+        explore(pos, total_ply, cur_ply + 1);
+        pos.take_king_back(move, moves_plus_memory.second);
+    }
+    for(move_t& move : moves_plus_memory.first.second) {
         pos.make_move(move);
         explore(pos, total_ply, cur_ply + 1);
         pos.take_back(move, moves_plus_memory.second);
@@ -24,13 +29,22 @@ void explore(position& pos, int total_ply, int cur_ply = 0) {
 
 void explore2(position& pos, int ply) {
     int total = 0;
-    std::pair<std::vector<move_t>, memory_t> moves_plus_memory = pos.get_moves();
-    for(move_t& move : moves_plus_memory.first) {
+    std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> moves_plus_memory = pos.get_moves();
+    for(move_t& move : moves_plus_memory.first.first) {
+        pos.make_king_move(move);
+        i = 0;
+        pos.print_fen();
+        explore(pos, ply - 1);
+        pos.take_king_back(move, moves_plus_memory.second);
+        total += i;
+        std::cout << i << std::endl;
+    }
+    for(move_t& move : moves_plus_memory.first.second) {
         pos.make_move(move);
         i = 0;
         pos.print_fen();
-	explore(pos, ply - 1);
-	pos.take_back(move, moves_plus_memory.second);
+        explore(pos, ply - 1);
+        pos.take_back(move, moves_plus_memory.second);
         total += i;
         std::cout << i << std::endl;
     }

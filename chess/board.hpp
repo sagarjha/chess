@@ -8,8 +8,10 @@
 class board_t {
 public:
     void place(const int pos, const int piece);
+    void place_king(const int pos, const int piece);
     void remove(const int pos);
     void replace(const int src, const int dest);
+    void replace_king(const int src, const int dest);
 
     void find_checks(int enemy_pos[2], int side);
     int check_pinned(int pos);
@@ -32,6 +34,5 @@ public:
 
     int board[64];
     int king_pos[2];
-    int knight_pos[2][10];
     std::map<int, int> pins;
 };
