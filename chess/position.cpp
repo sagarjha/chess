@@ -70,8 +70,8 @@ position::position(const std::string& fen) {
 }
 
 std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> position::get_moves() {
-    board.reset_pins_map();
-
+    board.reset_pins();
+    
     std::pair<std::pair<std::vector<move_t>, std::vector<move_t>>, memory_t> moves_plus_memory;
     for(int color : {WHITE, BLACK}) {
         for(int side : {KINGSIDE, QUEENSIDE}) {

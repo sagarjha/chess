@@ -4,7 +4,7 @@
 
 #include "piece.hpp"
 
-std::map<int, std::array<int, 8>> knight_jumps;
+std::vector<std::array<int, 8>> knight_jumps;
 std::function<int(int board[64], int)> find_next[8];
 int slider_dir[8] = {1, -1, 8, -8, 7, -7, 9, -9};
 bool is_initialized = false;
@@ -66,7 +66,7 @@ void board_t::find_checks(int enemy_pos[2], int side) {
 }
 
 int board_t::check_pinned(int pos) {
-    if(pins.contains(pos)) {
+    if(pins[pos] != -2) {
         return pins[pos];
     }
 
@@ -383,8 +383,10 @@ void board_t::find_piece_moves(std::vector<move_t>& moves, int pos, int dir) {
     }
 }
 
-void board_t::reset_pins_map() {
-    pins.clear();
+void board_t::reset_pins() {
+    for(int i = 0; i < 64; ++i) {
+        pins[i] = -2;
+    }
 }
 
 int& board_t::operator[](const std::size_t idx) {
@@ -400,12 +402,15 @@ board_t::board_t() {
     for(int i = 0; i < 64; ++i) {
         board[i] = EMPTY;
     }
+    reset_pins();
 }
 
 void initialize() {
     if(is_initialized) {
         return;
     }
+
+    knight_jumps.resize(64, {-1, -1, -1, -1, -1, -1, -1, -1});
 
     std::function<int(int[], int, int, int)> next_in_range =
             [](int board[64], int first, int last, int step) {
@@ -515,10 +520,9 @@ void normal_move(int board[64], std::vector<move_t>& moves, int cur, int dest) {
 };
 
 std::array<int, 8>& get_knight_jumps(int pos) {
-    if(knight_jumps.contains(pos)) {
+    if(knight_jumps[pos][0] != -1) {
         return knight_jumps[pos];
     }
-    knight_jumps[pos] = {-1, -1, -1, -1, -1, -1, -1, -1};
     int i = 0;
     for(int dir : {10, -6, 6, -10, 17, 15, -15, -17}) {
         int next = pos + dir;

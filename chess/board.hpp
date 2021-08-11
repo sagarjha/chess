@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 #include <vector>
 
 #include "types.hpp"
@@ -25,7 +24,7 @@ public:
     void find_pawn_moves(std::vector<move_t>& moves, int pos, int dir, int enpassant_file);
     void find_piece_moves(std::vector<move_t>& moves, int pos);
     void find_piece_moves(std::vector<move_t>& moves, int pos, int dir);
-    void reset_pins_map();
+    void reset_pins();
 
     int& operator[](const std::size_t idx);
     const int& operator[](const std::size_t idx) const;
@@ -34,5 +33,5 @@ public:
 
     int board[64];
     int king_pos[2];
-    std::map<int, int> pins;
+    int pins[64];
 };
