@@ -10,9 +10,9 @@ fens=(
 )
 for fen in "${fens[@]}"; do
     echo $fen
-    for (( i = 0; i < 7; ++i )); do
+    for (( i = 0; i <= 7; ++i )); do
 	date
-	timeout 60 ../Release/bin/main "$fen" $i
+	timeout 600 ../Release/bin/main "$fen" $i 1 0
 	echo
     done
     echo

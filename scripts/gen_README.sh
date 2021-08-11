@@ -22,8 +22,8 @@ In reference to [Perft Results](https://www.chessprogramming.org/Perft_Results)
 
 Date `date`, commit `git rev-parse HEAD`
 
-|d = | 4 | 5 | 6 |
-|--- |---|---|---|
+|d = | 4 | 5 | 6 | 7 |
+|--- |---|---|---|---|
 EOF
 
 fens=(
@@ -46,12 +46,12 @@ prompts=(
 
 num_pos=${#fens[@]}
 
-timeout=60
+timeout=600
 
 for (( pos = 0; pos < num_pos; ++pos )); do
     fen=${fens[pos]}
     str="| ${prompts[pos]} | "
-    for (( i = 4; i <= 4; ++i )); do
+    for (( i = 4; i <= 7; ++i )); do
 	time=`timeout $timeout ../Release/bin/main "$fen" $i 0 1`
 	str+="$time"
 	str+=" |"
